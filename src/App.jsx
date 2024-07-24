@@ -9,9 +9,13 @@ function App() {
   const [x, setX] = useState(50); // Initial left position
   const [y, setY] = useState(100); // Initial bottom position
   const [showLine1, setShowLine1] = useState(true);
+  const [enemyX, setEnemyX] = useState(Math.random() * 500); // Initial enemy left position
+  const [enemyY, setEnemyY] = useState(-50); // Initial enemy bottom position (above the game area)
   const speed = 5;
+  const enemySpeed = 2;
   const animationFrameRef = useRef(null);
   const toggleIntervalRef = useRef(null);
+  const enemyAnimationFrameRef = useRef(null);
 
   // Define game area boundaries
   const gameAreaWidth = 500;
@@ -70,19 +74,28 @@ function App() {
       if (toggleIntervalRef.current) {
         clearInterval(toggleIntervalRef.current);
       }
+      if (enemyAnimationFrameRef.current) {
+        cancelAnimationFrame(enemyAnimationFrameRef.current);
+      }
     };
   }, []);
 
   useEffect(() => {
     if (player) {
-      const animate = () => {
+      const animatePlayer = () => {
         if (arrowUp || arrowDown || arrowRight || arrowLeft) {
           playGame();
-          animationFrameRef.current = requestAnimationFrame(animate);
         }
+        animationFrameRef.current = requestAnimationFrame(animatePlayer);
       };
 
-      animationFrameRef.current = requestAnimationFrame(animate);
+      const animateEnemy = () => {
+        moveEnemy();
+        enemyAnimationFrameRef.current = requestAnimationFrame(animateEnemy);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animatePlayer);
+      enemyAnimationFrameRef.current = requestAnimationFrame(animateEnemy);
 
       toggleIntervalRef.current = setInterval(() => {
         setShowLine1((prev) => !prev);
@@ -94,6 +107,9 @@ function App() {
         }
         if (toggleIntervalRef.current) {
           clearInterval(toggleIntervalRef.current);
+        }
+        if (enemyAnimationFrameRef.current) {
+          cancelAnimationFrame(enemyAnimationFrameRef.current);
         }
       };
     }
@@ -133,6 +149,18 @@ function App() {
     });
   }
 
+  function moveEnemy() {
+    setEnemyY((prevY) => {
+      const newY = prevY + enemySpeed;
+      if (newY > gameAreaHeight) {
+        // Respawn enemy at the top at a random horizontal position
+        setEnemyX(Math.random() * (gameAreaWidth - 56));
+        return -50; // Restart enemy position above the game area
+      }
+      return newY;
+    });
+  }
+
   const start = () => {
     setPlayer(true);
   };
@@ -145,6 +173,19 @@ function App() {
           style={{ left: `${x}px`, bottom: `${y}px` }}
         >
           car
+        </div>
+      )}
+    </div>
+  );
+
+  const EnemyCar = () => (
+    <div>
+      {player && (
+        <div
+          className="absolute w-14 h-32 bg-red-500 m-auto "
+          style={{ left: `${enemyX}px`, top: `${enemyY}px` }}
+        >
+          enemy
         </div>
       )}
     </div>
@@ -224,6 +265,7 @@ function App() {
         >
           {showLine1 ? <Line1 /> : <Line2 />}
           <Car />
+          <EnemyCar />
         </div>
       </div>
     </div>
