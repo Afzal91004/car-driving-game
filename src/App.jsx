@@ -8,8 +8,10 @@ function App() {
   const [player, setPlayer] = useState(false);
   const [x, setX] = useState(50); // Initial left position
   const [y, setY] = useState(100); // Initial bottom position
+  const [showLine1, setShowLine1] = useState(true);
   const speed = 5;
   const animationFrameRef = useRef(null);
+  const toggleIntervalRef = useRef(null);
 
   // Define game area boundaries
   const gameAreaWidth = 500;
@@ -65,6 +67,9 @@ function App() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      if (toggleIntervalRef.current) {
+        clearInterval(toggleIntervalRef.current);
+      }
     };
   }, []);
 
@@ -79,9 +84,16 @@ function App() {
 
       animationFrameRef.current = requestAnimationFrame(animate);
 
+      toggleIntervalRef.current = setInterval(() => {
+        setShowLine1((prev) => !prev);
+      }, 300);
+
       return () => {
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (toggleIntervalRef.current) {
+          clearInterval(toggleIntervalRef.current);
         }
       };
     }
@@ -108,7 +120,7 @@ function App() {
       const newX = prevX + moveX;
       // Check bounds for X
       if (newX < 0) return 0;
-      if (newX > gameAreaWidth - 56) return gameAreaWidth - 56; // 56 is the width of the car
+      if (newX > gameAreaWidth - 56) return gameAreaWidth - 56;
       return newX;
     });
 
@@ -116,7 +128,7 @@ function App() {
       const newY = prevY + moveY;
       // Check bounds for Y
       if (newY < 0) return 0;
-      if (newY > gameAreaHeight - 32) return gameAreaHeight - 32; // 32 is the height of the car
+      if (newY > gameAreaHeight - 32) return gameAreaHeight - 32;
       return newY;
     });
   }
@@ -137,11 +149,11 @@ function App() {
       )}
     </div>
   );
-  const Line = () => {
+
+  const Line1 = () => {
     const lineWidth = 10;
-    // const lineHeight = 24;
-    const segmentLength = 60;
-    const segmentGap = 40;
+    const segmentLength = 50;
+    const segmentGap = 50;
     const totalSegments = Math.ceil(
       gameAreaHeight / (segmentLength + segmentGap)
     );
@@ -163,6 +175,33 @@ function App() {
       </div>
     );
   };
+
+  const Line2 = () => {
+    const lineWidth = 10;
+    const segmentLength = 50;
+    const segmentGap = 50;
+    const totalSegments = Math.ceil(
+      gameAreaHeight / (segmentLength + segmentGap)
+    );
+
+    return (
+      <div className="absolute top-0 left-0 w-full h-full">
+        {[...Array(totalSegments)].map((_, index) => (
+          <div
+            key={index}
+            className="absolute bg-white"
+            style={{
+              width: `${lineWidth}px`,
+              height: `${segmentLength}px`,
+              top: `${index * (segmentLength + segmentGap) + 50}px`,
+              left: `${gameAreaWidth / 2 - lineWidth / 2}px`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div>
       <div>score</div>
@@ -183,7 +222,7 @@ function App() {
           id="gameArea"
           style={{ width: `${gameAreaWidth}px`, height: `${gameAreaHeight}px` }} // Set game area size
         >
-          <Line />
+          {showLine1 ? <Line1 /> : <Line2 />}
           <Car />
         </div>
       </div>
