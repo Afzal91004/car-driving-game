@@ -22,6 +22,10 @@ const App = () => {
   });
   const [enemyCars, setEnemyCars] = useState([]);
   const [lines, setLines] = useState([]);
+  const [previousScore, setPreviousScore] = useState(0);
+  const [highestScore, setHighestScore] = useState(
+    parseInt(localStorage.getItem("highestScore"), 10) || 0
+  );
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -89,6 +93,12 @@ const App = () => {
 
   const endGame = () => {
     setGameStarted(false);
+    setPreviousScore(player.score);
+    setHighestScore((prevHighest) => {
+      const newHighest = Math.max(prevHighest, player.score);
+      localStorage.setItem("highestScore", newHighest);
+      return newHighest;
+    });
     setPlayer((prevPlayer) => ({ ...prevPlayer, score: 0 }));
   };
 
@@ -169,6 +179,8 @@ const App = () => {
       <div className="score bg-white h-16 w-screen text-black text-center text-2xl font-fantasy flex items-center justify-between">
         <div>Car Driving Game</div>
         <div>Score: {player.score}</div>
+        <div>Previous Score: {previousScore}</div>
+        <div>Highest Score: {highestScore}</div>
         <div>
           <img src={kromaApps} style={{ width: 200 }} alt="" />
         </div>
