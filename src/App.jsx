@@ -5,6 +5,7 @@ import EnemyCar from "./components/EnemyCar";
 import Line from "./components/Line";
 import { randomColor } from "./utils";
 import kromaApps from "./assets/KROMAAPPS.png";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 const App = () => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -174,20 +175,42 @@ const App = () => {
     }));
   };
 
+  const moveLeft = () => {
+    setPlayer((prevPlayer) => ({
+      ...prevPlayer,
+      x: Math.max(0, prevPlayer.x - prevPlayer.speed),
+    }));
+  };
+
+  const moveRight = () => {
+    setPlayer((prevPlayer) => ({
+      ...prevPlayer,
+      x: Math.min(window.innerWidth - 50, prevPlayer.x + prevPlayer.speed),
+    }));
+  };
+
   return (
     <div className="App overflow-hidden">
-      <div className="score bg-white h-16 w-screen text-black text-center text-2xl font-fantasy flex items-center justify-between">
-        <div>Car Driving Game</div>
-        <div>Score: {player.score}</div>
-        <div>Previous Score: {previousScore}</div>
-        <div>Highest Score: {highestScore}</div>
+      <div className="score bg-white h-16 w-screen text-black text-center text-xs md:text-2xl font-fantasy flex items-center justify-between">
+        <div className="mx-1 sm:text-xl sm:px-6">Car Driving Game</div>
+        <div className="flex">
+          <div className="bg-red-600 text-white font-normal sm:p-3">
+            Current Score: {player.score}
+          </div>
+          <div className="bg-yellow-500 text-white font-normal sm:p-3">
+            Previous Score: {previousScore}
+          </div>
+          <div className="bg-green-600 text-white font-normal sm:p-3">
+            Highest Score: {highestScore}
+          </div>
+        </div>
         <div>
-          <img src={kromaApps} style={{ width: 200 }} alt="" />
+          <img src={kromaApps} className="w-28 sm:w-48" alt="" />
         </div>
       </div>
       {!gameStarted && <StartScreen startGame={startGame} />}
       {gameStarted && (
-        <div className="gameArea bg-black w-screen h-screen overflow-hidden relative fixed">
+        <div className="gameArea bg-black/80 w-screen h-screen overflow-hidden relative fixed">
           {lines.map((line, index) => (
             <Line key={index} y={line.y} />
           ))}
@@ -200,6 +223,14 @@ const App = () => {
               color={enemy.color}
             />
           ))}
+          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-52">
+            <button className="bg-blue-500 p-2 rounded" onClick={moveLeft}>
+              <FaArrowLeft />
+            </button>
+            <button className="bg-blue-500 p-2 rounded" onClick={moveRight}>
+              <FaArrowRight />
+            </button>
+          </div>
         </div>
       )}
     </div>
