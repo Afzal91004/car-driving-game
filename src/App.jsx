@@ -1,275 +1,197 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import StartScreen from "./components/StartScreen";
+import Car from "./components/Car";
+import EnemyCar from "./components/EnemyCar";
+import Line from "./components/Line";
+import { randomColor } from "./utils";
+import kromaApps from "./assets/KROMAAPPS.png";
 
-function App() {
-  const [arrowUp, setArrowUp] = useState(false);
-  const [arrowDown, setArrowDown] = useState(false);
-  const [arrowRight, setArrowRight] = useState(false);
-  const [arrowLeft, setArrowLeft] = useState(false);
-  const [player, setPlayer] = useState(false);
-  const [x, setX] = useState(50); // Initial left position
-  const [y, setY] = useState(100); // Initial bottom position
-  const [showLine1, setShowLine1] = useState(true);
-  const [enemyX, setEnemyX] = useState(Math.random() * 500); // Initial enemy left position
-  const [enemyY, setEnemyY] = useState(-50); // Initial enemy bottom position (above the game area)
-  const speed = 5;
-  const enemySpeed = 2;
-  const animationFrameRef = useRef(null);
-  const toggleIntervalRef = useRef(null);
-  const enemyAnimationFrameRef = useRef(null);
-
-  // Define game area boundaries
-  const gameAreaWidth = 500;
-  const gameAreaHeight = 680;
+const App = () => {
+  const [gameStarted, setGameStarted] = useState(false);
+  const [player, setPlayer] = useState({
+    x: 0,
+    y: 0,
+    speed: 5,
+    score: 0,
+  });
+  const [keys, setKeys] = useState({
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+  });
+  const [enemyCars, setEnemyCars] = useState([]);
+  const [lines, setLines] = useState([]);
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      event.preventDefault();
-      switch (event.key) {
-        case "ArrowUp":
-          setArrowUp(true);
-          break;
-        case "ArrowDown":
-          setArrowDown(true);
-          break;
-        case "ArrowRight":
-          setArrowRight(true);
-          break;
-        case "ArrowLeft":
-          setArrowLeft(true);
-          break;
-        default:
-          break;
-      }
+    const handleKeyDown = (e) => {
+      setKeys((prevKeys) => ({ ...prevKeys, [e.key]: true }));
     };
 
-    const handleKeyUp = (event) => {
-      event.preventDefault();
-      switch (event.key) {
-        case "ArrowUp":
-          setArrowUp(false);
-          break;
-        case "ArrowDown":
-          setArrowDown(false);
-          break;
-        case "ArrowRight":
-          setArrowRight(false);
-          break;
-        case "ArrowLeft":
-          setArrowLeft(false);
-          break;
-        default:
-          break;
-      }
+    const handleKeyUp = (e) => {
+      setKeys((prevKeys) => ({ ...prevKeys, [e.key]: false }));
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (toggleIntervalRef.current) {
-        clearInterval(toggleIntervalRef.current);
-      }
-      if (enemyAnimationFrameRef.current) {
-        cancelAnimationFrame(enemyAnimationFrameRef.current);
-      }
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
 
   useEffect(() => {
-    if (player) {
-      const animatePlayer = () => {
-        if (arrowUp || arrowDown || arrowRight || arrowLeft) {
-          playGame();
+    if (gameStarted) {
+      const handlePlayerMovement = () => {
+        if (keys.ArrowUp && player.y > 0) {
+          setPlayer((prevPlayer) => ({
+            ...prevPlayer,
+            y: prevPlayer.y - player.speed,
+          }));
         }
-        animationFrameRef.current = requestAnimationFrame(animatePlayer);
-      };
-
-      const animateEnemy = () => {
-        moveEnemy();
-        enemyAnimationFrameRef.current = requestAnimationFrame(animateEnemy);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(animatePlayer);
-      enemyAnimationFrameRef.current = requestAnimationFrame(animateEnemy);
-
-      toggleIntervalRef.current = setInterval(() => {
-        setShowLine1((prev) => !prev);
-      }, 300);
-
-      return () => {
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
+        if (keys.ArrowDown && player.y < window.innerHeight - 100) {
+          setPlayer((prevPlayer) => ({
+            ...prevPlayer,
+            y: prevPlayer.y + player.speed,
+          }));
         }
-        if (toggleIntervalRef.current) {
-          clearInterval(toggleIntervalRef.current);
+        if (keys.ArrowLeft && player.x > 0) {
+          setPlayer((prevPlayer) => ({
+            ...prevPlayer,
+            x: prevPlayer.x - player.speed,
+          }));
         }
-        if (enemyAnimationFrameRef.current) {
-          cancelAnimationFrame(enemyAnimationFrameRef.current);
+        if (keys.ArrowRight && player.x < window.innerWidth - 50) {
+          setPlayer((prevPlayer) => ({
+            ...prevPlayer,
+            x: prevPlayer.x + player.speed,
+          }));
         }
       };
-    }
-  }, [arrowUp, arrowDown, arrowRight, arrowLeft, player]);
 
-  function playGame() {
-    let moveX = 0;
-    let moveY = 0;
+      const gameInterval = setInterval(() => {
+        handlePlayerMovement();
+        moveLines();
+        moveEnemyCars();
+        checkCollision();
+        updateScore();
+      }, 1000 / 60); // 60 FPS
 
-    if (arrowUp) {
-      moveY += speed;
+      return () => clearInterval(gameInterval);
     }
-    if (arrowDown) {
-      moveY -= speed;
-    }
-    if (arrowRight) {
-      moveX += speed;
-    }
-    if (arrowLeft) {
-      moveX -= speed;
-    }
+  }, [gameStarted, keys, player]);
 
-    setX((prevX) => {
-      const newX = prevX + moveX;
-      // Check bounds for X
-      if (newX < 0) return 0;
-      if (newX > gameAreaWidth - 56) return gameAreaWidth - 56;
-      return newX;
+  const startGame = () => {
+    setGameStarted(true);
+    initializeGame();
+  };
+
+  const endGame = () => {
+    setGameStarted(false);
+    setPlayer((prevPlayer) => ({ ...prevPlayer, score: 0 }));
+  };
+
+  const initializeGame = () => {
+    const gameAreaWidth = 96; // Set the width of the game area
+    const carWidth = 50; // Set the width of the car
+    const carHeight = 100; // Set the height of the car
+
+    setPlayer({
+      x: (gameAreaWidth - carWidth) / 2,
+      y: window.innerHeight - carHeight - 20, // Position near the bottom
+      speed: 5,
+      score: 0,
     });
 
-    setY((prevY) => {
-      const newY = prevY + moveY;
-      // Check bounds for Y
-      if (newY < 0) return 0;
-      if (newY > gameAreaHeight - 32) return gameAreaHeight - 32;
-      return newY;
-    });
-  }
+    const initialLines = [];
+    for (let i = 0; i < 10; i++) {
+      initialLines.push({ y: i * 150 });
+    }
+    setLines(initialLines);
 
-  function moveEnemy() {
-    setEnemyY((prevY) => {
-      const newY = prevY + enemySpeed;
-      if (newY > gameAreaHeight) {
-        // Respawn enemy at the top at a random horizontal position
-        setEnemyX(Math.random() * (gameAreaWidth - 56));
-        return -50; // Restart enemy position above the game area
+    const initialEnemyCars = [];
+    for (let i = 0; i < 3; i++) {
+      initialEnemyCars.push({
+        y: (i + 1) * -600,
+        left: Math.floor(Math.random() * (gameAreaWidth - 50)),
+        color: randomColor(), // Set a fixed color for each enemy car
+      });
+    }
+    setEnemyCars(initialEnemyCars);
+  };
+
+  const moveLines = () => {
+    setLines((prevLines) =>
+      prevLines.map((line) => ({
+        ...line,
+        y: line.y > window.innerHeight ? -100 : line.y + player.speed,
+      }))
+    );
+  };
+
+  const moveEnemyCars = () => {
+    setEnemyCars((prevEnemyCars) =>
+      prevEnemyCars.map((car) => ({
+        ...car,
+        y: car.y > window.innerHeight ? -600 : car.y + player.speed,
+        left:
+          car.y > window.innerHeight
+            ? Math.floor(Math.random() * (300 - 50))
+            : car.left,
+        color: car.color, // Keep the same color
+      }))
+    );
+  };
+
+  const checkCollision = () => {
+    enemyCars.forEach((enemy) => {
+      if (
+        player.y < enemy.y + 100 &&
+        player.y + 100 > enemy.y &&
+        player.x < enemy.left + 50 &&
+        player.x + 50 > enemy.left
+      ) {
+        endGame();
       }
-      return newY;
     });
-  }
-
-  const start = () => {
-    setPlayer(true);
   };
 
-  const Car = () => (
-    <div>
-      {player && (
-        <div
-          className="absolute w-14 h-32 bg-blue-950 m-auto "
-          style={{ left: `${x}px`, bottom: `${y}px` }}
-        >
-          car
-        </div>
-      )}
-    </div>
-  );
-
-  const EnemyCar = () => (
-    <div>
-      {player && (
-        <div
-          className="absolute w-14 h-32 bg-red-500 m-auto "
-          style={{ left: `${enemyX}px`, top: `${enemyY}px` }}
-        >
-          enemy
-        </div>
-      )}
-    </div>
-  );
-
-  const Line1 = () => {
-    const lineWidth = 10;
-    const segmentLength = 50;
-    const segmentGap = 50;
-    const totalSegments = Math.ceil(
-      gameAreaHeight / (segmentLength + segmentGap)
-    );
-
-    return (
-      <div className="absolute top-0 left-0 w-full h-full">
-        {[...Array(totalSegments)].map((_, index) => (
-          <div
-            key={index}
-            className="absolute bg-white"
-            style={{
-              width: `${lineWidth}px`,
-              height: `${segmentLength}px`,
-              top: `${index * (segmentLength + segmentGap)}px`,
-              left: `${gameAreaWidth / 2 - lineWidth / 2}px`,
-            }}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const Line2 = () => {
-    const lineWidth = 10;
-    const segmentLength = 50;
-    const segmentGap = 50;
-    const totalSegments = Math.ceil(
-      gameAreaHeight / (segmentLength + segmentGap)
-    );
-
-    return (
-      <div className="absolute top-0 left-0 w-full h-full">
-        {[...Array(totalSegments)].map((_, index) => (
-          <div
-            key={index}
-            className="absolute bg-white"
-            style={{
-              width: `${lineWidth}px`,
-              height: `${segmentLength}px`,
-              top: `${index * (segmentLength + segmentGap) + 50}px`,
-              left: `${gameAreaWidth / 2 - lineWidth / 2}px`,
-            }}
-          />
-        ))}
-      </div>
-    );
+  const updateScore = () => {
+    setPlayer((prevPlayer) => ({
+      ...prevPlayer,
+      score: prevPlayer.score + 1,
+    }));
   };
 
   return (
-    <div>
-      <div>score</div>
-      <div className="">
-        gameclass
-        <div
-          onClick={start}
-          className={`cursor-pointer transition-opacity duration-500 ${
-            player ? "hidden" : ""
-          }`}
-        >
-          Welcome Message (StartScreenClass)
-        </div>
-        <div
-          className={`transition-opacity duration-500 h-svh w-48 m-auto bg-black relative overflow-hidden ${
-            player ? "" : "hidden"
-          }`}
-          id="gameArea"
-          style={{ width: `${gameAreaWidth}px`, height: `${gameAreaHeight}px` }} // Set game area size
-        >
-          {showLine1 ? <Line1 /> : <Line2 />}
-          <Car />
-          <EnemyCar />
+    <div className="App overflow-hidden">
+      <div className="score bg-white h-16 w-screen text-black text-center text-2xl font-fantasy flex items-center justify-between">
+        <div>Car Driving Game</div>
+        <div>Score: {player.score}</div>
+        <div>
+          <img src={kromaApps} style={{ width: 200 }} alt="" />
         </div>
       </div>
+      {!gameStarted && <StartScreen startGame={startGame} />}
+      {gameStarted && (
+        <div className="gameArea bg-black w-screen h-screen overflow-hidden relative fixed">
+          {lines.map((line, index) => (
+            <Line key={index} y={line.y} />
+          ))}
+          <Car x={player.x} y={player.y} />
+          {enemyCars.map((enemy, index) => (
+            <EnemyCar
+              key={index}
+              y={enemy.y}
+              left={enemy.left}
+              color={enemy.color}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default App;
