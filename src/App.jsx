@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import StartScreen from "./components/StartScreen";
 import Car from "./components/Car";
 import EnemyCar from "./components/EnemyCar";
 import Line from "./components/Line";
 import { randomColor } from "./utils";
 import kromaApps from "./assets/KROMAAPPS.png";
-import gameStartSound from "./assets/game-start-sound.mp3"; // Import your game start sound
+import gameStartSound from "./assets/game-start-sound.mp3";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 const App = () => {
@@ -28,6 +28,8 @@ const App = () => {
   const [highestScore, setHighestScore] = useState(
     parseInt(localStorage.getItem("highestScore"), 10) || 0
   );
+
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -76,15 +78,15 @@ const App = () => {
         }
       };
 
-      const gameInterval = setInterval(() => {
+      intervalRef.current = setInterval(() => {
         handlePlayerMovement();
         moveLines();
         moveEnemyCars();
         checkCollision();
         updateScore();
-      }, 1000 / 60); // 60 FPS
+      }, 1000 / 60);
 
-      return () => clearInterval(gameInterval);
+      return () => clearInterval(intervalRef.current);
     }
   }, [gameStarted, keys, player]);
 
@@ -112,13 +114,13 @@ const App = () => {
   };
 
   const initializeGame = () => {
-    const gameAreaWidth = 96; // Set the width of the game area
-    const carWidth = 50; // Set the width of the car
-    const carHeight = 100; // Set the height of the car
+    const gameAreaWidth = 96;
+    const carWidth = 50;
+    const carHeight = 100;
 
     setPlayer({
       x: (gameAreaWidth - carWidth) / 2,
-      y: window.innerHeight - carHeight - 20, // Position near the bottom
+      y: window.innerHeight - carHeight - 20,
       speed: 5,
       score: 0,
     });
@@ -134,7 +136,7 @@ const App = () => {
       initialEnemyCars.push({
         y: (i + 1) * -600,
         left: Math.floor(Math.random() * (gameAreaWidth - 50)),
-        color: randomColor(), // Set a fixed color for each enemy car
+        color: randomColor(),
       });
     }
     setEnemyCars(initialEnemyCars);
@@ -158,7 +160,7 @@ const App = () => {
           car.y > window.innerHeight
             ? Math.floor(Math.random() * (300 - 50))
             : car.left,
-        color: car.color, // Keep the same color
+        color: car.color,
       }))
     );
   };
@@ -181,6 +183,14 @@ const App = () => {
       ...prevPlayer,
       score: prevPlayer.score + 1,
     }));
+  };
+
+  const handleButtonDown = (direction) => {
+    setKeys((prevKeys) => ({ ...prevKeys, [direction]: true }));
+  };
+
+  const handleButtonUp = (direction) => {
+    setKeys((prevKeys) => ({ ...prevKeys, [direction]: false }));
   };
 
   return (
@@ -219,26 +229,22 @@ const App = () => {
           ))}
           <div className="sm:hidden absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-48">
             <button
-              className="bg-gray-200 p-2 rounded"
-              onMouseDown={() =>
-                setKeys((prevKeys) => ({ ...prevKeys, ArrowLeft: true }))
-              }
-              onMouseUp={() =>
-                setKeys((prevKeys) => ({ ...prevKeys, ArrowLeft: false }))
-              }
+              className="bg-gray-200 p-2 w-16 rounded-full"
+              onMouseDown={() => handleButtonDown("ArrowLeft")}
+              onMouseUp={() => handleButtonUp("ArrowLeft")}
+              onTouchStart={() => handleButtonDown("ArrowLeft")}
+              onTouchEnd={() => handleButtonUp("ArrowLeft")}
             >
-              <FaArrowLeft /> left
+              <FaArrowLeft />
             </button>
             <button
-              className="bg-gray-200 p-2 rounded"
-              onMouseDown={() =>
-                setKeys((prevKeys) => ({ ...prevKeys, ArrowRight: true }))
-              }
-              onMouseUp={() =>
-                setKeys((prevKeys) => ({ ...prevKeys, ArrowRight: false }))
-              }
+              className="bg-gray-200 p-2 w-16 rounded-full"
+              onMouseDown={() => handleButtonDown("ArrowRight")}
+              onMouseUp={() => handleButtonUp("ArrowRight")}
+              onTouchStart={() => handleButtonDown("ArrowRight")}
+              onTouchEnd={() => handleButtonUp("ArrowRight")}
             >
-              <FaArrowRight /> right
+              <FaArrowRight />
             </button>
           </div>
         </div>

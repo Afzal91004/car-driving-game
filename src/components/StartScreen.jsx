@@ -1,6 +1,6 @@
 import React from "react";
 import convertibleCar from "../assets/convertible-car.gif";
-import backgroundMusic from "../assets/background-music.wav"; // Import your .wav file
+import backgroundMusic from "../assets/background-music.wav";
 
 const StartScreen = ({ startGame }) => {
   return (
@@ -16,7 +16,7 @@ const StartScreen = ({ startGame }) => {
       <div>
         <img src={convertibleCar} alt="" />
       </div>
-      <audio src={backgroundMusic} autoPlay loop />
+      <audio src={backgroundMusic} autoPlay />
     </div>
   );
 };
