@@ -5,6 +5,7 @@ import EnemyCar from "./components/EnemyCar";
 import Line from "./components/Line";
 import { randomColor } from "./utils";
 import kromaApps from "./assets/KROMAAPPS.png";
+import gameStartSound from "./assets/game-start-sound.mp3"; // Import your game start sound
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 const App = () => {
@@ -86,6 +87,13 @@ const App = () => {
       return () => clearInterval(gameInterval);
     }
   }, [gameStarted, keys, player]);
+
+  useEffect(() => {
+    if (gameStarted) {
+      const audio = new Audio(gameStartSound);
+      audio.play();
+    }
+  }, [gameStarted]);
 
   const startGame = () => {
     setGameStarted(true);
@@ -175,20 +183,6 @@ const App = () => {
     }));
   };
 
-  const moveLeft = () => {
-    setPlayer((prevPlayer) => ({
-      ...prevPlayer,
-      x: Math.max(0, prevPlayer.x - prevPlayer.speed),
-    }));
-  };
-
-  const moveRight = () => {
-    setPlayer((prevPlayer) => ({
-      ...prevPlayer,
-      x: Math.min(window.innerWidth - 50, prevPlayer.x + prevPlayer.speed),
-    }));
-  };
-
   return (
     <div className="App overflow-hidden">
       <div className="score bg-white h-16 w-screen text-black text-center text-xs md:text-2xl font-fantasy flex items-center justify-between">
@@ -223,12 +217,28 @@ const App = () => {
               color={enemy.color}
             />
           ))}
-          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-52">
-            <button className="bg-blue-500 p-2 rounded" onClick={moveLeft}>
-              <FaArrowLeft />
+          <div className="sm:hidden absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-48">
+            <button
+              className="bg-gray-200 p-2 rounded"
+              onMouseDown={() =>
+                setKeys((prevKeys) => ({ ...prevKeys, ArrowLeft: true }))
+              }
+              onMouseUp={() =>
+                setKeys((prevKeys) => ({ ...prevKeys, ArrowLeft: false }))
+              }
+            >
+              <FaArrowLeft /> left
             </button>
-            <button className="bg-blue-500 p-2 rounded" onClick={moveRight}>
-              <FaArrowRight />
+            <button
+              className="bg-gray-200 p-2 rounded"
+              onMouseDown={() =>
+                setKeys((prevKeys) => ({ ...prevKeys, ArrowRight: true }))
+              }
+              onMouseUp={() =>
+                setKeys((prevKeys) => ({ ...prevKeys, ArrowRight: false }))
+              }
+            >
+              <FaArrowRight /> right
             </button>
           </div>
         </div>
